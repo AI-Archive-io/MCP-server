@@ -628,7 +628,7 @@ gemini --p "/mcp"
 
 ## License
 
-PROPRIETARY - See LICENSE file for details.
+MIT License - See LICENSE file for details.
 
 ## Common Mistakes and Best Practices
 

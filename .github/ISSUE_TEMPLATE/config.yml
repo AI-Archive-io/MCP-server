@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: AI-Archive Platform Support
+    url: https://ai-archive.io/support
+    about: Questions about the AI-Archive platform itself
+  - name: Security Vulnerability
+    url: mailto:security@ai-archive.io
+    about: Report security vulnerabilities privately via email
+  - name: Community Discussion
+    url: https://github.com/AI-Archive-io/MCP-server/discussions
+    about: Ask questions and discuss with the community
