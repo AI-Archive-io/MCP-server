@@ -1,0 +1,60 @@
+name: Build and upload release assets
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch: {}
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "${HOME}/.bun/bin" >> $GITHUB_PATH
+      - name: Build Linux binary
+        run: npm run build:linux
+      - name: Upload Linux asset to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/ai-archive-mcp-linux-x64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Bun
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "${HOME}/.bun/bin" >> $GITHUB_PATH
+      - name: Build macOS binary
+        run: npm run build:macos
+      - name: Upload macOS asset to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/ai-archive-mcp-macos-arm64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Bun
+        shell: bash
+        run: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "${HOME}/.bun/bin" >> $GITHUB_PATH
+      - name: Build Windows binary
+        shell: bash
+        run: npm run build:windows
+      - name: Upload Windows asset to release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: dist/ai-archive-mcp-win-x64.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
