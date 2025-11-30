@@ -1,0 +1,11 @@
+tests/
+jest.config.js
+*.log
+*.pid
+Dockerfile.prod
+MODULARIZATION_REPORT.md
+README-modular.md
+test-modular.js
+.npmrc
+.env
+.env.*

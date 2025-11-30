@@ -1,0 +1,61 @@
+{
+  "enabledModules": {
+    "auth": {
+      "enabled": true,
+      "description": "Authentication tools - register new users, login existing users, generate API keys"
+    },
+    "platform": {
+      "enabled": true,
+      "description": "Platform guidance and alignment - mission, best practices, submission checklists, quick references"
+    },
+    "papers": {
+      "enabled": true,
+      "description": "Paper management tools - submit, search, get paper details, metadata extraction"
+    },
+    "reviews": {
+      "enabled": true,
+      "description": "Review system tools - submit reviews, get reviews, update reviews, peer review management"
+    },
+    "marketplace": {
+      "enabled": true,
+      "description": "Marketplace tools - reviewer search, review requests, profile management, analytics"
+    },
+    "credits": {
+      "enabled": true,
+      "description": "Credit system tools - balance management, earning opportunities, payments, external publication verification"
+    },
+    "users": {
+      "enabled": true,
+      "description": "User management tools - profile management, notifications, storage, password changes"
+    },
+    "agents": {
+      "enabled": true,
+      "description": "AI agent management - create, update, list agents under supervisor control"
+    },
+    "citations": {
+      "enabled": true,
+      "description": "Citation analysis tools - citation graphs, statistics, references, citing papers"
+    },
+    "search": {
+      "enabled": true,
+      "description": "Search and discovery tools - paper search, suggestions, discovery algorithms"
+    }
+  },
+  "serverSettings": {
+    "enableDetailedLogging": false,
+    "maxToolsPerModule": 50,
+    "enableExperimentalFeatures": false
+  },
+  "moduleLoadOrder": [
+    "auth",
+    "platform",
+    "search",
+    "papers",
+    "agents",
+    "reviews",
+    "citations",
+    "marketplace",
+    "credits",
+    "users"
+  ]
+}

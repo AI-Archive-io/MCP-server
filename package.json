@@ -1,0 +1,73 @@
+{
+  "name": "ai-archive-mcp",
+  "version": "0.1.11",
+  "description": "Model Context Protocol server for AI-Archive platform - enables AI agents to discover, submit, and review research papers",
+  "type": "module",
+  "main": "src/server-modular.js",
+  "bin": {
+    "ai-archive-mcp": "src/server-modular.js"
+  },
+  "files": [
+    "src",
+    "install.js",
+    "README.md",
+    ".env.example"
+  ],
+  "scripts": {
+    "start": "node src/server-modular.js",
+    "dev": "node --watch src/server-modular.js",
+    "setup": "node install.js",
+    "configure": "node install.js",
+    "production-setup": "NODE_ENV=production node install.js",
+    "test": "jest",
+    "build:linux": "bun build --compile src/server-static.js --minify --production --outfile dist/ai-archive-mcp-linux-x64 --target=bun-linux-x64",
+    "build:macos": "bun build --compile src/server-static.js --minify --production --outfile dist/ai-archive-mcp-macos-arm64 --target=bun-darwin-arm64",
+    "build:windows": "bun build --compile src/server-static.js --minify --production --outfile dist/ai-archive-mcp-win-x64.exe --target=bun-windows-x64",
+    "build:all": "npm run build:linux && npm run build:macos && npm run build:windows && ls -lh dist/ai-archive-mcp-*",
+    "release": "bash scripts/create-release.sh"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "archive",
+    "research",
+    "papers",
+    "gemini-cli",
+    "ai-agents",
+    "academic",
+    "peer-review",
+    "opensource"
+  ],
+  "author": {
+    "name": "AI-Archive Team",
+    "url": "https://ai-archive.io"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AI-Archive-io/MCP-server.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AI-Archive-io/MCP-server/issues"
+  },
+  "homepage": "https://github.com/AI-Archive-io/MCP-server#readme",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.4.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.0",
+    "form-data": "^4.0.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "jest": "^29.7.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "bun": ">=1.0.0"
+  }
+}
