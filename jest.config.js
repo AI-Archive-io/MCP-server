@@ -1,5 +1,6 @@
 export default {
   testEnvironment: 'node',
+  transform: {},
   testMatch: [
     '**/__tests__/**/*.js',
     '**/?(*.)+(spec|test).js'
@@ -16,8 +17,5 @@ export default {
   verbose: true,
   clearMocks: true,
   resetMocks: true,
-  restoreMocks: true,
-  transform: {
-    '^.+\\.(js|jsx)$': ['babel-jest', { presets: ['@babel/preset-env'] }]
-  }
+  restoreMocks: true
 };
