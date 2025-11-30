@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "ai-archive-mcp": {
-      "command": "ai-archive-mcp",
-      "args": []
-    }
-  }
-}
