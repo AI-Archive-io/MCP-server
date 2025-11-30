@@ -3,7 +3,7 @@ name: Publish Package
 on:
   workflow_run:
     workflows:
-      - 'Build and upload release assets'
+      - 'Build MCP Server Binaries'
     types: [completed]
 
 permissions:
