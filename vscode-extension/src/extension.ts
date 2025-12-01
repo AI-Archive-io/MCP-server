@@ -6,13 +6,34 @@ import * as os from 'os';
 import * as https from 'https';
 
 // Binary download URLs from GitHub releases
-const BINARY_VERSION = '0.1.16';
-const BINARY_BASE_URL = `https://github.com/AI-Archive-io/MCP-server/releases/download/v${BINARY_VERSION}`;
-const BINARIES: Record<string, { name: string; url: string }> = {
-	'linux-x64': { name: 'ai-archive-mcp-linux-x64', url: `${BINARY_BASE_URL}/ai-archive-mcp-linux-x64` },
-	'darwin-arm64': { name: 'ai-archive-mcp-macos-arm64', url: `${BINARY_BASE_URL}/ai-archive-mcp-macos-arm64` },
-	'darwin-x64': { name: 'ai-archive-mcp-macos-x64', url: `${BINARY_BASE_URL}/ai-archive-mcp-macos-x64` },
-	'win32-x64': { name: 'ai-archive-mcp-win-x64.exe', url: `${BINARY_BASE_URL}/ai-archive-mcp-win-x64.exe` },
+const EXTENSION_ID = 'ai-archive.ai-archive-mcp-server';
+
+function getExtensionVersion(): string {
+	const extension = vscode.extensions.getExtension(EXTENSION_ID);
+	return extension?.packageJSON.version || '0.1.16';
+}
+
+function getBinaryBaseUrl(): string {
+	const version = getExtensionVersion();
+	return `https://github.com/AI-Archive-io/MCP-server/releases/download/v${version}`;
+}
+
+function getBinaryUrl(platformKey: string): string {
+	const baseUrl = getBinaryBaseUrl();
+	const binaries: Record<string, string> = {
+		'linux-x64': 'ai-archive-mcp-linux-x64',
+		'darwin-arm64': 'ai-archive-mcp-macos-arm64',
+		'darwin-x64': 'ai-archive-mcp-macos-x64',
+		'win32-x64': 'ai-archive-mcp-win-x64.exe'
+	};
+	return `${baseUrl}/${binaries[platformKey]}`;
+}
+
+const BINARY_NAMES: Record<string, string> = {
+	'linux-x64': 'ai-archive-mcp-linux-x64',
+	'darwin-arm64': 'ai-archive-mcp-macos-arm64',
+	'darwin-x64': 'ai-archive-mcp-macos-x64',
+	'win32-x64': 'ai-archive-mcp-win-x64.exe',
 };
 
 /**
@@ -22,7 +43,13 @@ function getPlatformBinary(): { name: string; url: string } | null {
 	const platform = os.platform();
 	const arch = os.arch();
 	const key = `${platform}-${arch}`;
-	return BINARIES[key] || null;
+	
+	if (!BINARY_NAMES[key]) return null;
+	
+	return {
+		name: BINARY_NAMES[key],
+		url: getBinaryUrl(key)
+	};
 }
 
 /**

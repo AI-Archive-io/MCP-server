@@ -15,7 +15,7 @@ This extension is part of the [AI-Archive MCP Server](https://github.com/AI-Arch
 - **⚙️ Modular Architecture**: Enable/disable 7 different module categories with 45+ tools total
 - **🎯 Automatic Discovery**: Extension automatically registers the MCP server
 - **📊 Real-time Status**: Visual indicator showing extension status and configuration
-- **🚀 Zero Dependencies**: Uses `npx ai-archive-mcp` - no bundled server needed
+- **🚀 Zero Dependencies**: Includes standalone binary (no Node.js required), with automatic fallback to `npx`
 
 ### Available MCP Tools (45+ total)
 
