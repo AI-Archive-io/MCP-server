@@ -1,0 +1,166 @@
+{
+  "name": "ai-archive-mcp-server",
+  "displayName": "AI-Archive MCP Server",
+  "description": "Provides MCP server integration for AI-Archive research paper access through VS Code language models",
+  "version": "0.2.0",
+  "publisher": "ai-archive",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AI-Archive-io/MCP-server"
+  },
+  "bugs": {
+    "url": "https://github.com/AI-Archive-io/MCP-server/issues"
+  },
+  "homepage": "https://ai-archive.io",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "research",
+    "papers",
+    "academic",
+    "ai",
+    "arxiv",
+    "language-model",
+    "copilot"
+  ],
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#1e1e1e",
+    "theme": "dark"
+  },
+  "engines": {
+    "vscode": "^1.103.0"
+  },
+  "categories": [
+    "AI",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "ai-archive-mcp-server.showStatus",
+        "title": "Show AI-Archive MCP Server Status"
+      },
+      {
+        "command": "ai-archive-mcp-server.configureApiKey",
+        "title": "Configure AI-Archive API Key"
+      },
+      {
+        "command": "ai-archive-mcp-server.configureModules",
+        "title": "Configure AI-Archive MCP Modules"
+      },
+      {
+        "command": "ai-archive-mcp-server.resetToDefaults",
+        "title": "Reset AI-Archive MCP Configuration to Defaults"
+      }
+    ],
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "ai-archive.mcp-servers",
+        "label": "AI-Archive Research Papers"
+      }
+    ],
+    "configuration": {
+      "title": "AI-Archive MCP Server",
+      "properties": {
+        "ai-archive.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Your AI-Archive API key for accessing research papers",
+          "markdownDescription": "Your AI-Archive API key. Get one from [https://ai-archive.io/api-keys](https://ai-archive.io/api-keys)"
+        },
+        "ai-archive.apiBaseUrl": {
+          "type": "string",
+          "default": "https://ai-archive.io/api/v1",
+          "description": "Base URL of the AI-Archive API",
+          "markdownDescription": "The API endpoint URL. Use `https://ai-archive.io/api/v1` as default."
+        },
+        "ai-archive.useModularServer": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use the modular MCP server version",
+          "markdownDescription": "Enable the modular MCP server for better performance and configurability"
+        },
+        "ai-archive.enabledModules": {
+          "type": "object",
+          "default": {
+            "search": true,
+            "papers": true,
+            "agents": true,
+            "reviews": true,
+            "citations": true,
+            "marketplace": true,
+            "users": true
+          },
+          "description": "Configure which MCP server modules are enabled",
+          "properties": {
+            "search": {
+              "type": "boolean",
+              "description": "Search and discovery tools (4 tools)"
+            },
+            "papers": {
+              "type": "boolean",
+              "description": "Paper management tools (9 tools)"
+            },
+            "agents": {
+              "type": "boolean",
+              "description": "AI agent management (3 tools)"
+            },
+            "reviews": {
+              "type": "boolean",
+              "description": "Review system tools (4 tools)"
+            },
+            "citations": {
+              "type": "boolean",
+              "description": "Citation analysis tools (5 tools)"
+            },
+            "marketplace": {
+              "type": "boolean",
+              "description": "Marketplace and reviewer tools (12 tools)"
+            },
+            "users": {
+              "type": "boolean",
+              "description": "User management and notifications (8 tools)"
+            }
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "npm run check-types && npm run lint && node esbuild.js",
+    "watch": "npm-run-all -p watch:*",
+    "watch:esbuild": "node esbuild.js --watch",
+    "watch:tsc": "tsc --noEmit --watch --project tsconfig.json",
+    "package": "npm run check-types && npm run lint && node esbuild.js --production",
+    "compile-tests": "tsc -p . --outDir out",
+    "watch-tests": "tsc -p . -w --outDir out",
+    "pretest": "npm run compile-tests && npm run compile && npm run lint",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "vscode-test",
+    "vsix": "vsce package --allow-missing-repository --baseContentUrl https://ai-archive.io --baseImagesUrl https://ai-archive.io",
+    "vsix:install": "vsce package --out ai-archive-mcp-server.vsix --baseContentUrl https://ai-archive.io --baseImagesUrl https://ai-archive.io && code --install-extension ai-archive-mcp-server.vsix",
+    "build": "npm run package && npm run vsix"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@types/vscode": "^1.103.0",
+    "@typescript-eslint/eslint-plugin": "^8.42.0",
+    "@typescript-eslint/parser": "^8.42.0",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2",
+    "@vscode/vsce": "^3.6.2",
+    "esbuild": "^0.25.11",
+    "eslint": "^9.34.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.9.2"
+  }
+}
