@@ -15,16 +15,16 @@
 
 ; Installer metadata
 Name "AI-Archive MCP Server"
-OutFile "AI-Archive-MCP-Installer.exe"
+OutFile "AI-Archive-Bundle-Installer.exe"
 Icon "opencode-logo-dark.ico"
 VIProductVersion "${VERSION}.0"
 VIAddVersionKey "ProductName" "AI-Archive MCP Server"
 VIAddVersionKey "FileVersion" "${VERSION}"
 VIAddVersionKey "ProductVersion" "${VERSION}"
 VIAddVersionKey "LegalCopyright" "AI-Archive Team"
-VIAddVersionKey "FileDescription" "AI-Archive MCP Server Installer (Binary)"
-VIAddVersionKey "InternalName" "AI-Archive MCP Installer"
-VIAddVersionKey "OriginalFilename" "AI-Archive-MCP-Installer.exe"
+VIAddVersionKey "FileDescription" "AI-Archive Bundle Installer (OpenCode + MCP + Agents)"
+VIAddVersionKey "InternalName" "AI-Archive Bundle Installer"
+VIAddVersionKey "OriginalFilename" "AI-Archive-Bundle-Installer.exe"
 BrandingText "AI-Archive"
 InstallDir "$LOCALAPPDATA\AI-Archive"
 RequestExecutionLevel user

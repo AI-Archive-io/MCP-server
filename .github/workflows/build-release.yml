@@ -54,12 +54,12 @@ jobs:
 
       - name: Build Windows Installer
         run: |
-          makensis -DVERSION=${{ steps.version.outputs.version }} installers/windows/installer-binary.nsi
+          makensis -DVERSION=${{ steps.version.outputs.version }} opencode-bundle/windows/installer-binary.nsi
 
       - name: Verify binaries created
         run: |
           ls -lh dist || true
-          ls -lh installers/windows/AI-Archive-MCP-Installer.exe || true
+          ls -lh opencode-bundle/windows/AI-Archive-Bundle-Installer.exe || true
 
       - name: Make binaries executable
         run: |
@@ -74,6 +74,6 @@ jobs:
             dist/ai-archive-mcp-linux-x64
             dist/ai-archive-mcp-macos-arm64
             dist/ai-archive-mcp-win-x64.exe
-            installers/windows/AI-Archive-MCP-Installer.exe
+            opencode-bundle/windows/AI-Archive-Bundle-Installer.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
