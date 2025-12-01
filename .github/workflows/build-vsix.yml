@@ -30,7 +30,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -84,13 +84,14 @@ jobs:
           path: vscode-extension/*.vsix
           retention-days: 30
 
-      # Upload VSIX to GitHub release
+      # Upload VSIX to existing GitHub release (don't create a new one)
       - name: Upload VSIX to Release
         if: github.event_name == 'workflow_run'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          files: vscode-extension/*.vsix
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          VSIX_FILE=$(ls *.vsix | head -1)
+          echo "Uploading $VSIX_FILE to release v${VERSION}..."
+          gh release upload "v${VERSION}" "$VSIX_FILE" --clobber
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

@@ -44,7 +44,9 @@ function getPlatformBinary(): { name: string; url: string } | null {
 	const arch = os.arch();
 	const key = `${platform}-${arch}`;
 	
-	if (!BINARY_NAMES[key]) return null;
+	if (!BINARY_NAMES[key]) {
+		return null;
+	}
 	
 	return {
 		name: BINARY_NAMES[key],
@@ -57,7 +59,9 @@ function getPlatformBinary(): { name: string; url: string } | null {
  */
 function getBundledBinaryPath(context: vscode.ExtensionContext): string | null {
 	const binary = getPlatformBinary();
-	if (!binary) return null;
+	if (!binary) {
+		return null;
+	}
 	
 	const bundledPath = path.join(context.extensionPath, 'bin', binary.name);
 	return fs.existsSync(bundledPath) ? bundledPath : null;
@@ -443,7 +447,9 @@ function registerCommands(context: vscode.ExtensionContext, provider: AIarchiveM
 			try {
 				await downloadBinary(context);
 				vscode.window.showInformationMessage('Binary downloaded successfully! Restart may be required.');
-				if (provider) provider.refresh();
+				if (provider) {
+					provider.refresh();
+				}
 			} catch (error) {
 				vscode.window.showErrorMessage(`Failed to download binary: ${error}`);
 			}
@@ -466,7 +472,9 @@ function registerCommands(context: vscode.ExtensionContext, provider: AIarchiveM
 			const config = vscode.workspace.getConfiguration('ai-archive');
 			await config.update('apiKey', apiKey, vscode.ConfigurationTarget.Global);
 			vscode.window.showInformationMessage('API key configured successfully!');
-			if (provider) provider.refresh();
+			if (provider) {
+				provider.refresh();
+			}
 		}
 	});
 
@@ -488,7 +496,9 @@ function registerCommands(context: vscode.ExtensionContext, provider: AIarchiveM
 			}, vscode.ConfigurationTarget.Global);
 			await config.update('useModularServer', true, vscode.ConfigurationTarget.Global);
 			vscode.window.showInformationMessage('Configuration reset to defaults!');
-			if (provider) provider.refresh();
+			if (provider) {
+				provider.refresh();
+			}
 		}
 	});
 
@@ -497,7 +507,9 @@ function registerCommands(context: vscode.ExtensionContext, provider: AIarchiveM
 		try {
 			const binaryPath = await downloadBinary(context);
 			vscode.window.showInformationMessage(`Binary downloaded to: ${binaryPath}`);
-			if (provider) provider.refresh();
+			if (provider) {
+				provider.refresh();
+			}
 		} catch (error) {
 			vscode.window.showErrorMessage(`Failed to download binary: ${error}`);
 		}
@@ -529,7 +541,9 @@ function createModuleConfigurationPanel(context: vscode.ExtensionContext, provid
 				case 'saveConfig':
 					await config.update('enabledModules', message.modules, vscode.ConfigurationTarget.Global);
 					await config.update('useModularServer', message.useModularServer, vscode.ConfigurationTarget.Global);
-					if (provider) provider.refresh();
+					if (provider) {
+						provider.refresh();
+					}
 					vscode.window.showInformationMessage(
 						`Configuration saved! Enabled ${Object.values(message.modules!).filter(Boolean).length} modules.`
 					);
@@ -654,7 +668,7 @@ function getModuleConfigurationHtml(enabledModules: any, useModularServer: boole
 		}
 		window.addEventListener('message', e => {
 			if (e.data.command === 'updateModules') {
-				Object.entries(e.data.modules).forEach(([k, v]) => { const cb = document.getElementById(k); if (cb) cb.checked = v; });
+				Object.entries(e.data.modules).forEach(([k, v]) => { const cb = document.getElementById(k); if (cb) { cb.checked = v; } });
 				updateStats();
 			}
 		});
