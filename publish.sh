@@ -14,19 +14,28 @@ CURRENT_VERSION=$(node -p "require('./package.json').version")
 echo "🚀 Starting publish process..."
 echo "Current version: ${CURRENT_VERSION}"
 
-# Bump version (patch increment: x.x.y -> x.x.y+1)
-echo "📦 Bumping version..."
-npm version patch
+# Bump version in main package (patch increment: x.x.y -> x.x.y+1)
+echo "📦 Bumping main package version..."
+npm version patch --no-git-tag-version
 
 # Get the new version
 VERSION=$(node -p "require('./package.json').version")
 echo "New version: ${VERSION}"
 
-# Double-check that the new tag was created (npm version should have done this)
-if ! git tag -l "v${VERSION}" | grep -q "v${VERSION}"; then
-    echo "❌ Error: Tag v${VERSION} was not created by npm version. Something went wrong."
-    exit 1
-fi
+# Sync version to VS Code extension package.json
+echo "🔄 Syncing version to VS Code extension..."
+cd vscode-extension
+npm version "${VERSION}" --no-git-tag-version --allow-same-version
+cd ..
+
+# Commit both package.json files
+echo "📝 Committing version changes..."
+git add package.json package-lock.json vscode-extension/package.json vscode-extension/package-lock.json
+git commit -m "v${VERSION}"
+
+# Create and push tag
+echo "🏷️ Creating tag v${VERSION}..."
+git tag -a "v${VERSION}" -m "v${VERSION}"
 
 # Push the version commit and tag
 echo "📤 Pushing version commit and tag..."
