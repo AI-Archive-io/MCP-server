@@ -631,7 +631,7 @@ export class AuthTools {
           'X-API-Key': apiKey,
           'Content-Type': 'application/json'
         },
-        timeout: 15000,  // Increased timeout to 15 seconds for slower connections
+        timeout: 60000,  // 60 second timeout - API can be slow to respond
         httpAgent: undefined,  // Use default agent
         httpsAgent: undefined  // Use default agent
       });
@@ -704,7 +704,7 @@ export class AuthTools {
       headers: {
         'Content-Type': 'application/json'
       },
-      timeout: 10000
+      timeout: 60000  // 60 second timeout - API can be slow to respond
     };
 
     if (data) {
@@ -739,7 +739,7 @@ export class AuthTools {
           name: `MCP Server - ${new Date().toISOString().split('T')[0]}`,
           permissions: ['read']
         },
-        timeout: 10000
+        timeout: 60000  // 60 second timeout - API can be slow to respond
       });
 
       return response.data;

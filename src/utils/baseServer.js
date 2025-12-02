@@ -234,7 +234,7 @@ export class BaseServerUtils {
         login: this.authConfig.email,
         password: this.authConfig.password
       }, {
-        timeout: 10000
+        timeout: 60000  // 60 second timeout - API can be slow to respond
       });
 
       if (response.data.success && response.data.token) {
