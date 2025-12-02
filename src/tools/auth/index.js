@@ -556,7 +556,10 @@ export class AuthTools {
       // Using /auth/me endpoint to check if key is valid
       const testResponse = await this.testApiKey(apiKey);
 
-      if (!testResponse.success) {
+      // The /auth/me endpoint returns user data if successful (200 response)
+      // or throws an error if invalid (401/403 response)
+      // If we got here, the response was successful
+      if (!testResponse || (testResponse.success === false)) {
         throw new McpError(
           ErrorCode.InvalidRequest,
           'API key is invalid or has been revoked. Please generate a new API key from the web portal.'
@@ -574,9 +577,9 @@ export class AuthTools {
         `✅ **API Key Configured Successfully!**\n\n` +
         `Your API key has been validated and saved to the .env file.\n\n` +
         `**User Profile:**\n` +
-        `• Email: ${testResponse.data?.email || 'Verified'}\n` +
-        `• Username: ${testResponse.data?.username || 'Verified'}\n` +
-        `• Organization: ${testResponse.data?.affiliation || 'Not provided'}\n\n` +
+        `• Email: ${testResponse.email || 'Verified'}\n` +
+        `• Username: ${testResponse.username || 'Verified'}\n` +
+        `• Organization: ${testResponse.affiliation || 'Not provided'}\n\n` +
         `**API Key Status:** ✅ Active and ready to use\n\n` +
         `**You can now use MCP to:**\n` +
         `• Submit papers with \`submit_paper\`\n` +
@@ -619,6 +622,8 @@ export class AuthTools {
     try {
       // Make a simple authenticated request to verify the key works
       // Using /auth/me endpoint which returns user info and accepts X-API-Key header
+      console.error(`   Testing API key at: ${this.baseUtils.apiBaseUrl}/auth/me`);
+      
       const response = await axios({
         method: 'GET',
         url: `${this.baseUtils.apiBaseUrl}/auth/me`,
@@ -626,11 +631,37 @@ export class AuthTools {
           'X-API-Key': apiKey,
           'Content-Type': 'application/json'
         },
-        timeout: 10000
+        timeout: 15000,  // Increased timeout to 15 seconds for slower connections
+        httpAgent: undefined,  // Use default agent
+        httpsAgent: undefined  // Use default agent
       });
 
       return response.data;
     } catch (error) {
+      // Handle timeout errors
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        throw new McpError(
+          ErrorCode.InternalError,
+          `API request timed out when testing key. The API at ${this.baseUtils.apiBaseUrl} is not responding quickly. ` +
+          `Please check your internet connection and try again. If the problem persists, the production API may be temporarily unavailable.`
+        );
+      }
+
+      // Handle connection errors
+      if (error.code === 'ENOTFOUND') {
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Cannot resolve API domain: ${this.baseUtils.apiBaseUrl}. Please check your DNS settings and internet connection.`
+        );
+      }
+
+      if (error.code === 'ECONNREFUSED') {
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Connection refused by API server at ${this.baseUtils.apiBaseUrl}. The server may be down or unreachable.`
+        );
+      }
+
       // If request fails, API key is invalid
       if (error.response?.status === 401 || error.response?.status === 403) {
         throw new McpError(
@@ -639,7 +670,25 @@ export class AuthTools {
         );
       }
 
-      throw error;
+      // For other HTTP errors, provide more context
+      if (error.response?.status) {
+        const errorMsg = error.response?.data?.error || error.response?.data?.message || 'Unknown error';
+        throw new McpError(
+          ErrorCode.InternalError,
+          `API request failed with status ${error.response.status}: ${errorMsg}`
+        );
+      }
+
+      // Re-throw McpErrors
+      if (error instanceof McpError) {
+        throw error;
+      }
+
+      // For unexpected errors, provide debugging info
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to test API key: ${error.message} (${error.code || 'unknown error code'})`
+      );
     }
   }
 
