@@ -45,12 +45,26 @@ export class BaseServerUtils {
         // This is likely from a backend .env file, not user-set
         delete process.env.API_BASE_URL;
       }
+      
+      // For global installations, load .env.ai-archive-mcp from home directory
+      const homeEnvPath = path.join(process.env.HOME || process.env.USERPROFILE || '.', '.env.ai-archive-mcp');
+      if (fs.existsSync(homeEnvPath)) {
+        console.error(`📁 Loading configuration from: ${homeEnvPath}`);
+        dotenv.config({ path: homeEnvPath, override: false });
+      }
     } else {
       // Development mode: load .env file from mcp-server directory
       const envPath = path.join(__dirname, "../../.env");
       
       if (fs.existsSync(envPath)) {
         dotenv.config({ path: envPath });
+      }
+      
+      // Also try to load home directory config (for when running from anywhere)
+      const homeEnvPath = path.join(process.env.HOME || process.env.USERPROFILE || '.', '.env.ai-archive-mcp');
+      if (fs.existsSync(homeEnvPath)) {
+        console.error(`📁 Loading configuration from: ${homeEnvPath}`);
+        dotenv.config({ path: homeEnvPath, override: false });
       }
     }
     
