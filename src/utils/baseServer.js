@@ -445,6 +445,9 @@ function getBaseUtils() {
 export const baseUtils = new Proxy({}, {
   get(target, prop) {
     const instance = getBaseUtils();
+    // Always ensure initialization before accessing any property
+    // This is critical for properties like apiBaseUrl that are only set during initialization
+    instance._ensureInitialized();
     const value = instance[prop];
     // Bind methods to the instance
     if (typeof value === 'function') {
