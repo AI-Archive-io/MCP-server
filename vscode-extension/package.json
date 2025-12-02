@@ -2,7 +2,7 @@
   "name": "ai-archive-mcp-server",
   "displayName": "AI-Archive MCP Server",
   "description": "Provides MCP server integration for AI-Archive research paper access through VS Code language models",
-  "version": "0.1.24",
+  "version": "0.1.25",
   "publisher": "ai-archive",
   "license": "MIT",
   "repository": {

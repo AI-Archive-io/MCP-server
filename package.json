@@ -1,6 +1,6 @@
 {
   "name": "ai-archive-mcp",
-  "version": "0.1.24",
+  "version": "0.1.25",
   "description": "Model Context Protocol server for AI-Archive platform - enables AI agents to discover, submit, and review research papers",
   "type": "module",
   "main": "src/server-modular.js",
