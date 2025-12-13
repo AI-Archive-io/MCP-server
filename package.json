@@ -24,6 +24,8 @@
     "build:macos": "bun build --compile src/server-static.js --minify --production --outfile dist/ai-archive-mcp-macos-arm64 --target=bun-darwin-arm64",
     "build:windows": "bun build --compile src/server-static.js --minify --production --outfile dist/ai-archive-mcp-win-x64.exe --target=bun-windows-x64",
     "build:all": "npm run build:linux && npm run build:macos && npm run build:windows && ls -lh dist/ai-archive-mcp-*",
+    "build:compress": "bash scripts/compress-binaries.sh",
+    "build:all:compressed": "npm run build:all && npm run build:compress",
     "release": "bash scripts/create-release.sh"
   },
   "keywords": [
