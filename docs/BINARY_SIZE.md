@@ -112,6 +112,21 @@ bun dist/bundle.js
 | **NPM Package** | 1 MB | ✅ Node ≥18 | Developers, users with Node.js |
 | **Bundle Only** | 0.6 MB | ✅ Bun ≥1.0 | Bun users, minimal size deployments |
 
+## Comparison with Other Projects
+
+### SST OpenCode
+
+We researched [SST OpenCode](https://github.com/sst/opencode), another Bun-based CLI tool. Key findings:
+
+1. **They use the same approach**: `Bun.build()` API with `compile` option
+2. **Same size constraints**: Their binaries are also ~100MB (Bun runtime + code)
+3. **Similar build configuration**:
+   - `autoloadBunfig: false`
+   - `autoloadDotenv: false`
+   - These options don't significantly reduce size
+
+**Conclusion**: The 100MB size is an industry standard for Bun standalone executables, not specific to our project.
+
 ## Future Possibilities
 
 ### Bun Improvements
@@ -145,4 +160,4 @@ For most use cases, the 100MB size is acceptable for a one-time download. Modern
 - [Bun Bundler Documentation](https://bun.sh/docs/bundler)
 - [Bun Standalone Executables](https://bun.sh/docs/bundler/executables)
 - [UPX Compression Tool](https://upx.github.io/)
-# Binary Size Analysis
+
