@@ -145,3 +145,4 @@ For most use cases, the 100MB size is acceptable for a one-time download. Modern
 - [Bun Bundler Documentation](https://bun.sh/docs/bundler)
 - [Bun Standalone Executables](https://bun.sh/docs/bundler/executables)
 - [UPX Compression Tool](https://upx.github.io/)
+# Binary Size Analysis
