@@ -28,7 +28,15 @@ A standalone executable has significant advantages:
 
 ## What We've Tried
 
-### 1. Build Optimizations ❌
+### 1. Removed Unused Dependencies ✅
+
+Analysis with `depcheck` revealed unused dependencies:
+- **Removed `zod`**: Was declared but unused (still installed as transitive dependency from `@modelcontextprotocol/sdk`)
+- **Removed `@types/node`**: TypeScript types not needed for runtime
+
+**Result**: Cleaner package.json, but no binary size reduction since zod is still needed by the MCP SDK
+
+### 2. Build Optimizations ❌
 
 We already use aggressive optimization flags:
 ```bash
@@ -38,9 +46,9 @@ bun build --compile --minify --production
 These flags:
 - `--minify`: Removes whitespace, shortens variable names
 - `--production`: Optimizes for production (smaller bundle)
-- Result: **Saves ~1.14 MB** on the bundle portion
+- Result: **Saves ~1.21 MB** on the bundle portion
 
-### 2. Disable Autoload Features ❌
+### 3. Disable Autoload Features ❌
 
 Tested disabling various runtime features:
 ```bash
@@ -52,7 +60,7 @@ Tested disabling various runtime features:
 
 **Result**: No meaningful size reduction (< 1 MB difference)
 
-### 3. UPX Compression ❌
+### 4. UPX Compression ❌
 
 [UPX (Ultimate Packer for eXecutables)](https://upx.github.io/) can compress binaries significantly:
 - UPX with `--best --lzma`: Compresses to **~26 MB** (75% reduction!)
@@ -60,7 +68,7 @@ Tested disabling various runtime features:
 
 **However**: UPX-compressed Bun executables **don't work**! The binary will show Bun's help message instead of running the bundled application. This is because Bun's self-extracting format conflicts with UPX's compression.
 
-### 4. Tree-Shaking and External Dependencies ❌
+### 5. Tree-Shaking and External Dependencies ❌
 
 Since all dependencies are needed and the bundle is already minified, there's minimal room for further reduction. The bundle itself is only 0.6 MB.
 
