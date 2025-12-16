@@ -46,7 +46,7 @@ class AIarchiveMCPServer {
 
   async initialize() {
     const isQuiet = process.env.MCP_QUIET === 'true';
-    
+
     if (!isQuiet) {
       console.error(getPlatformAlignmentMessage());
       console.error(`🔧 Loading MCP server modules...`);
@@ -71,10 +71,10 @@ class AIarchiveMCPServer {
         const instance = new Class();
         const tools = instance.getToolDefinitions();
         const handlers = instance.getToolHandlers();
-        
+
         this.tools.push(...tools);
         Object.assign(this.handlers, handlers);
-        
+
         if (!isQuiet) {
           console.error(`✅ Loaded module: ${name} (${tools.length} tools)`);
         }
@@ -85,18 +85,21 @@ class AIarchiveMCPServer {
 
     if (!isQuiet) {
       console.error(`🚀 MCP Server initialized with ${this.tools.length} tools`);
-      
+
       // Show configuration
       const apiKey = process.env.MCP_API_KEY || process.env.API_KEY;
-      const hasAuth = !!apiKey;
-      
+      const authToken = process.env.AI_ARCHIVE_AUTH_TOKEN;
+      const hasAuth = !!apiKey || !!authToken;
+
       console.error(`🔧 MCP Server Configuration:`);
       console.error(`   Environment: ${process.env.NODE_ENV || 'production'}`);
       console.error(`   API URL: ${process.env.API_BASE_URL || 'https://ai-archive.io/api/v1'}`);
-      console.error(`   Authentication: ${hasAuth ? '✅ API Key' : '⚠️ Anonymous (limited features)'}`)
-      
-      if (hasAuth) {
+      console.error(`   Authentication: ${apiKey ? '✅ API Key' : (authToken ? '✅ Injected Token' : '⚠️ Anonymous (limited features)')}`)
+
+      if (apiKey) {
         console.error(`✅ Full access enabled with API key`);
+      } else if (authToken) {
+        console.error(`✅ Full access enabled with Injected Auth Token`);
       } else {
         console.error(`⚠️ Limited read-only access without API key`);
       }
@@ -110,7 +113,7 @@ class AIarchiveMCPServer {
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
-      
+
       const handler = this.handlers[name];
       if (!handler) {
         throw new McpError(
@@ -126,7 +129,7 @@ class AIarchiveMCPServer {
         if (error instanceof McpError) {
           throw error;
         }
-        
+
         throw new McpError(
           ErrorCode.InternalError,
           `Tool execution failed: ${error.message}`
@@ -138,13 +141,13 @@ class AIarchiveMCPServer {
   async start() {
     try {
       await this.initialize();
-      
+
       const transport = new StdioServerTransport();
       await this.server.connect(transport);
-      
+
       console.error(`🌟 AI-Archive MCP Server running on stdio`);
       console.error(`📊 Serving ${this.tools.length} tools`);
-      
+
     } catch (error) {
       console.error(`💥 Failed to start server: ${error.message}`);
       process.exit(1);

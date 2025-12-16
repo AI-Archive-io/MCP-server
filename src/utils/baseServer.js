@@ -20,32 +20,32 @@ export class BaseServerUtils {
     // Lazy initialization - don't read environment in constructor
     // This allows compiled binaries to pick up runtime environment variables
     this._initialized = false;
-    
+
     // JWT token storage
     this.jwtToken = null;
     this.tokenExpiry = null;
   }
-  
+
   _ensureInitialized() {
     if (this._initialized) return;
-    
+
     // CRITICAL FIX: Bun automatically loads .env files at runtime even in compiled binaries!
     // This causes issues when the binary runs from directories with unrelated .env files.
     // Solution: Compiled binaries should clear auto-loaded env vars and use defaults.
     const isCompiledBinary = process.execPath.includes('ai-archive-mcp');
-    
+
     if (isCompiledBinary) {
       // Compiled binary: Clear Bun's auto-loaded environment variables
       // to prevent them from overriding our production defaults.
       // Users can still set these explicitly in their shell if needed.
-      const wasAutoLoaded = process.env.API_BASE_URL === 'http://localhost:3000' || 
-                           process.env.API_BASE_URL === 'http://localhost:3001';
-      
+      const wasAutoLoaded = process.env.API_BASE_URL === 'http://localhost:3000' ||
+        process.env.API_BASE_URL === 'http://localhost:3001';
+
       if (wasAutoLoaded) {
         // This is likely from a backend .env file, not user-set
         delete process.env.API_BASE_URL;
       }
-      
+
       // For global installations, load .env.ai-archive-mcp from home directory
       const homeEnvPath = path.join(process.env.HOME || process.env.USERPROFILE || '.', '.env.ai-archive-mcp');
       if (fs.existsSync(homeEnvPath)) {
@@ -55,11 +55,11 @@ export class BaseServerUtils {
     } else {
       // Development mode: load .env file from mcp-server directory
       const envPath = path.join(__dirname, "../../.env");
-      
+
       if (fs.existsSync(envPath)) {
         dotenv.config({ path: envPath });
       }
-      
+
       // Also try to load home directory config (for when running from anywhere)
       const homeEnvPath = path.join(process.env.HOME || process.env.USERPROFILE || '.', '.env.ai-archive-mcp');
       if (fs.existsSync(homeEnvPath)) {
@@ -67,47 +67,48 @@ export class BaseServerUtils {
         dotenv.config({ path: homeEnvPath, override: false });
       }
     }
-    
+
     // Environment detection and configuration
     // Default to production for npm package users and compiled binaries
     this.environment = process.env.NODE_ENV || 'production';
     this.isProduction = this.environment === 'production';
-    
+
     // API Configuration with production defaults
     this.apiBaseUrl = this.getApiBaseUrl();
-    
+
     // Support both MCP_API_KEY (preferred) and API_KEY (legacy) for backwards compatibility
     this.apiKey = process.env.MCP_API_KEY || process.env.API_KEY;
-    
+    this.authToken = process.env.AI_ARCHIVE_AUTH_TOKEN;
+
     // Authentication configuration
     this.authConfig = {
       email: process.env.MCP_SUPERVISOR_EMAIL,
       password: process.env.MCP_SUPERVISOR_PASSWORD,
     };
-    
+
     // Configuration validation
     this.validateConfiguration();
-    
+
     this._initialized = true;
   }
 
   getApiBaseUrl() {
     // If explicitly set in environment, use it (checked at runtime, not compile time)
     const apiBaseUrl = process.env.API_BASE_URL;
-    
+
     if (apiBaseUrl) {
       return apiBaseUrl;
     }
-    
+
     // Get environment at runtime
     const environment = process.env.NODE_ENV || 'production';
-    
+
     // For compiled binaries and production: always use production URL
     // Only use localhost if explicitly set to development mode
     if (environment === 'development') {
       return 'http://localhost:3000/api/v1';
     }
-    
+
     // Default to production (for compiled binaries and npm package users)
     return 'https://ai-archive.io/api/v1';
   }
@@ -116,8 +117,8 @@ export class BaseServerUtils {
     console.error(`🔧 MCP Server Configuration:`);
     console.error(`   Environment: ${this.environment}`);
     console.error(`   API URL: ${this.apiBaseUrl}`);
-    console.error(`   Authentication: ${this.apiKey ? '✅ API Key' : (this.authConfig.email ? '⚠️ Supervisor Credentials' : '⚠️ Anonymous (limited features)')}`);
-    
+    console.error(`   Authentication: ${this.apiKey ? '✅ API Key' : (this.authToken ? '✅ Injected Token' : (this.authConfig.email ? '⚠️ Supervisor Credentials' : '⚠️ Anonymous (limited features)'))}`);
+
     // Only require authentication in production if explicitly set via REQUIRE_AUTH flag
     if (this.isProduction && process.env.REQUIRE_AUTH === 'true') {
       if (!this.apiKey && (!this.authConfig.email || !this.authConfig.password)) {
@@ -126,7 +127,7 @@ export class BaseServerUtils {
         process.exit(1);
       }
     }
-    
+
     // Informational messages based on authentication status
     if (!this.apiKey && !this.authConfig.email) {
       console.error('');
@@ -142,10 +143,12 @@ export class BaseServerUtils {
       console.error('');
     } else if (this.apiKey) {
       console.error('✅ Full access enabled with API key');
+    } else if (this.authToken) {
+      console.error('✅ Full access enabled with Injected Auth Token');
     } else if (this.authConfig.email) {
       console.error('✅ Supervisor credentials configured (JWT authentication)');
     }
-    
+
     // Production domain warning
     if (this.isProduction && !this.apiBaseUrl.includes('ai-archive.io') && !process.env.API_BASE_URL) {
       console.error('⚠️  Warning: Production mode but not using ai-archive.io domain');
@@ -160,6 +163,12 @@ export class BaseServerUtils {
       return this.jwtToken;
     }
 
+    // Check if we have an injected auth token (from OpenCode session)
+    if (this.authToken) {
+      // Injected tokens are considered always valid for the session duration
+      return this.authToken;
+    }
+
     // Try to use the provided API key first (preferred method)
     if (this.apiKey) {
       try {
@@ -172,7 +181,7 @@ export class BaseServerUtils {
         return this.jwtToken;
       } catch (error) {
         console.error('❌ API key authentication failed:', error.message);
-        
+
         // In production, don't fallback to password auth for security
         if (this.isProduction) {
           throw new McpError(
@@ -180,7 +189,7 @@ export class BaseServerUtils {
             'API key authentication failed in production mode. Please run "npm run install" to reconfigure.'
           );
         }
-        
+
         console.error('🔄 Attempting fallback to supervisor/password authentication...');
       }
     }
@@ -268,14 +277,14 @@ export class BaseServerUtils {
   async makeApiRequest(endpoint, method = 'GET', data = null, requireAuth = true) {
     this._ensureInitialized();  // Lazy initialization
     console.error(`📡 Making API request to: ${endpoint}`);
-    
+
     const config = {
       method: method,
       url: `${this.apiBaseUrl}${endpoint}`,
       headers: {},
       timeout: 30000 // Increased timeout for file uploads
     };
-    
+
     // Handle FormData vs JSON
     if (data && typeof data.getHeaders === 'function') {
       // This is FormData - let it set its own headers
@@ -309,6 +318,9 @@ export class BaseServerUtils {
       } else if (this.jwtToken && this.tokenExpiry && Date.now() < this.tokenExpiry) {
         console.error(`🔑 Adding optional JWT token authentication`);
         config.headers['Authorization'] = `Bearer ${this.jwtToken}`;
+      } else if (this.authToken) {
+        console.error(`🔑 Adding optional injected token authentication`);
+        config.headers['Authorization'] = `Bearer ${this.authToken}`;
       } else {
         console.error(`ℹ️ Making anonymous request (no authentication available)`);
       }
@@ -317,7 +329,7 @@ export class BaseServerUtils {
     try {
       const response = await axios(config);
       console.error(`✅ API request successful: ${response.status}`);
-      
+
       // Normalize response structure for backward compatibility
       const normalizedData = this.normalizeResponse(response.data);
       return normalizedData;
@@ -327,22 +339,22 @@ export class BaseServerUtils {
         console.error(`   Status: ${error.response.status}`);
         console.error(`   Data:`, error.response.data);
       }
-      
+
       // If we get a 401 with JWT auth (not API key), try refreshing token
-      if (error.response?.status === 401 && 
-          config.headers['Authorization'] && 
-          !config._isRetry) {
+      if (error.response?.status === 401 &&
+        config.headers['Authorization'] &&
+        !config._isRetry) {
         console.error('🔄 JWT token expired, attempting to refresh authentication...');
         try {
           // Clear the current token and get a new one
           this.jwtToken = null;
           this.tokenExpiry = null;
           const newToken = await this.ensureAuthentication();
-          
+
           // Retry the request with the new token
           config.headers['Authorization'] = `Bearer ${newToken}`;
           config._isRetry = true;
-          
+
           const retryResponse = await axios(config);
           console.error(`✅ Retry successful after token refresh`);
           return this.normalizeResponse(retryResponse.data);
@@ -354,7 +366,7 @@ export class BaseServerUtils {
           );
         }
       }
-      
+
       if (error.response) {
         throw new McpError(
           ErrorCode.InternalError,
@@ -368,11 +380,11 @@ export class BaseServerUtils {
   // Helper method to determine request urgency for marketplace requests
   getRequestUrgency(request) {
     if (!request.deadline) return '📋';
-    
+
     const now = new Date();
     const deadline = new Date(request.deadline);
     const hoursUntilDeadline = (deadline - now) / (1000 * 60 * 60);
-    
+
     if (hoursUntilDeadline < 24) return '🔴'; // Urgent
     if (hoursUntilDeadline < 72) return '🟡'; // Moderate
     return '🟢'; // Normal
@@ -424,7 +436,7 @@ export class BaseServerUtils {
     // If response has nested pagination under data.pagination, flatten it
     if (responseData.data && responseData.data.pagination) {
       const { pagination, ...rest } = responseData.data;
-      
+
       // Create flattened structure with pagination fields at data level
       return {
         ...responseData,
@@ -468,6 +480,12 @@ export const baseUtils = new Proxy({}, {
       return value.bind(instance);
     }
     return value;
+  },
+  set(target, prop, value) {
+    const instance = getBaseUtils();
+    instance._ensureInitialized();
+    instance[prop] = value;
+    return true;
   }
 });
 

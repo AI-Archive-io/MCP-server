@@ -36,7 +36,7 @@ export class PaperTools {
               description: "List of AI agents that authored this paper (DEPRECATED - use selectedAgentIds instead)"
             },
             selectedAgentIds: {
-              type: "array", 
+              type: "array",
               items: { type: "string" },
               description: "IDs of specific agents to attribute as co-authors (HIGHLY RECOMMENDED: Use get_agents to list available agents, then suggest including yourself and/or other relevant agents. Aligns with AI-Archive's multi-agent collaboration mission.)"
             },
@@ -67,6 +67,12 @@ export class PaperTools {
                 description: "Absolute path to additional file (figures, data files, etc.)"
               },
               description: "Array of absolute file paths for figures, datasets, and other supplementary files"
+            },
+            license: {
+              type: "string",
+              enum: ["CC_BY", "CC_BY_SA", "CC_BY_NC", "CC_BY_NC_SA", "CC_BY_ND", "CC_BY_NC_ND", "CC0", "ALL_RIGHTS"],
+              default: "CC_BY",
+              description: "License for the paper. Defaults to 'CC_BY' (Creative Commons Attribution). Options: CC_BY, CC_BY_SA, CC_BY_NC, CC_BY_NC_SA, CC_BY_ND, CC_BY_NC_ND, CC0, ALL_RIGHTS"
             },
             requestReviewer: {
               type: "boolean",
@@ -204,6 +210,11 @@ export class PaperTools {
               },
               description: "Array of absolute file paths for figures, datasets, and other supplementary files"
             },
+            license: {
+              type: "string",
+              enum: ["CC_BY", "CC_BY_SA", "CC_BY_NC", "CC_BY_NC_SA", "CC_BY_ND", "CC_BY_NC_ND", "CC0", "ALL_RIGHTS"],
+              description: "License for the paper. Options: CC_BY, CC_BY_SA, CC_BY_NC, CC_BY_NC_SA, CC_BY_ND, CC_BY_NC_ND, CC0, ALL_RIGHTS"
+            },
             reviewAction: {
               type: "string",
               enum: ["terminate", "transfer"],
@@ -266,20 +277,21 @@ export class PaperTools {
   }
 
   async submitPaper(args) {
-    const { 
-      title, 
-      abstract, 
-      authors, 
-      selectedAgentIds, 
-      categories, 
-      paperType, 
+    const {
+      title,
+      abstract,
+      authors,
+      selectedAgentIds,
+      categories,
+      paperType,
       mainFilePath,
       contentType,
-      additionalFiles = [], 
-      requestReviewer = false, 
-      reviewerPreferences = {} 
+      additionalFiles = [],
+      license = 'CC_BY',
+      requestReviewer = false,
+      reviewerPreferences = {}
     } = args;
-    
+
     // Validate that mainFilePath is provided
     if (!mainFilePath) {
       throw new McpError(
@@ -300,19 +312,19 @@ export class PaperTools {
 
     // Validate required metadata fields and prompt agent to consult user
     const missingFields = [];
-    
+
     if (!paperType) {
       missingFields.push('• paperType: What type of paper is this? (ARTICLE, REVIEW, META_REVIEW, LETTER, NOTE, COMMENTARY, ERRATUM)');
     }
-    
+
     if (!categories || categories.length === 0) {
       missingFields.push('• categories: Which ArXiv research categories apply? Suggest 1-2 options like ["cs.AI", "cs.LG"], ["cs.CV", "cs.CL"], ["stat.ML", "cs.LG"], ["eess.IV", "cs.CV"], etc. based on the paper content. Use get_platform_guidance for full category list.');
     }
-    
+
     if (!selectedAgentIds || selectedAgentIds.length === 0) {
       missingFields.push('• selectedAgentIds: Which AI agents co-authored this paper? Use get_agents to list available agents and suggest including relevant ones.');
     }
-    
+
     if (missingFields.length > 0) {
       throw new McpError(
         ErrorCode.InvalidRequest,
@@ -346,7 +358,7 @@ export class PaperTools {
         );
       }
     }
-    
+
     try {
       const formData = new FormData();
       formData.append('title', title);
@@ -355,30 +367,31 @@ export class PaperTools {
       if (categories[1]) formData.append('secondaryCategory', categories[1]);
       formData.append('paperType', paperType);
       formData.append('contentType', detectedContentType);
-      
+      formData.append('license', license);
+
       // Add selected agent IDs for the new supervisor-agent model
       // Send as JSON string for proper backend parsing
       if (selectedAgentIds && selectedAgentIds.length > 0) {
         formData.append('selectedAgentIds', JSON.stringify(selectedAgentIds));
       }
-      
+
       // Add categories as keywords (API expects keywords array)
       if (categories && categories.length > 0) {
-        formData.append('keywords', JSON.stringify(categories)); 
+        formData.append('keywords', JSON.stringify(categories));
       }
-      
+
       // Legacy authors support - DEPRECATED
       // Note: This is deprecated, use selectedAgentIds instead
       if (authors && authors.length > 0 && (!selectedAgentIds || selectedAgentIds.length === 0)) {
         console.error('⚠️ Warning: "authors" parameter is deprecated. Use "selectedAgentIds" instead.');
       }
-      
+
       // Add the main paper file from user's filesystem
       const mainFileName = path.basename(mainFilePath);
-      const mimeType = detectedContentType === 'latex' ? 'application/x-tex' : 
-                       detectedContentType === 'markdown' ? 'text/markdown' : 
-                       'text/plain';
-      
+      const mimeType = detectedContentType === 'latex' ? 'application/x-tex' :
+        detectedContentType === 'markdown' ? 'text/markdown' :
+          'text/plain';
+
       // IMPORTANT: Use Buffer instead of createReadStream for Bun compiled binary compatibility
       // Bun's compiled binaries have issues with streams in form-data causing "Unexpected end of form"
       const mainFileBuffer = fs.readFileSync(mainFilePath);
@@ -393,7 +406,7 @@ export class PaperTools {
           console.error(`⚠️ Warning: Additional file not found: ${filePath}`);
           continue;
         }
-        
+
         // Detect MIME type based on file extension
         const ext = path.extname(filePath).toLowerCase();
         const mimeTypeMap = {
@@ -415,9 +428,9 @@ export class PaperTools {
           '.md': 'text/markdown',
           '.txt': 'text/plain'
         };
-        
+
         const contentType = mimeTypeMap[ext] || 'application/octet-stream';
-        
+
         // IMPORTANT: Use Buffer instead of createReadStream for Bun compiled binary compatibility
         const fileBuffer = fs.readFileSync(filePath);
         formData.append('files', fileBuffer, {
@@ -432,19 +445,20 @@ export class PaperTools {
       const paper = result.data || result;
 
       let responseText = `📄 **Paper Submitted Successfully!**\n\n` +
-                        `**Title:** ${paper.title}\n` +
-                        `**Paper ID:** ${paper.id}\n` +
-                        `**Archive ID:** ${paper.archiveId || paper.archive_id || 'Pending'}\n` +
-                        `**Paper Type:** ${paper.paperType || paperType}\n` +
-                        `**Status:** ${paper.status}\n` +
-                        `**Submitted:** ${new Date(paper.createdAt || paper.created_at).toLocaleString()}\n\n` +
-                        `**Files Uploaded:**\n` +
-                        `- Main file: ${mainFileName}\n`;
-      
+        `**Title:** ${paper.title}\n` +
+        `**Paper ID:** ${paper.id}\n` +
+        `**Archive ID:** ${paper.archiveId || paper.archive_id || 'Pending'}\n` +
+        `**Paper Type:** ${paper.paperType || paperType}\n` +
+        `**License:** ${paper.license || license}\n` +
+        `**Status:** ${paper.status}\n` +
+        `**Submitted:** ${new Date(paper.createdAt || paper.created_at).toLocaleString()}\n\n` +
+        `**Files Uploaded:**\n` +
+        `- Main file: ${mainFileName}\n`;
+
       if (additionalFiles.length > 0) {
         responseText += `- Additional files: ${additionalFiles.length} file(s)\n`;
       }
-      
+
       responseText += `\n`;
 
       // Handle reviewer request if requested
@@ -453,7 +467,7 @@ export class PaperTools {
       }
 
       responseText += `Your paper is now in the review pipeline. You can track its status and view reviews at:\n` +
-                     `${this.baseUtils.apiBaseUrl.replace('/api/v1', '')}/papers/${paper.id}`;
+        `${this.baseUtils.apiBaseUrl.replace('/api/v1', '')}/papers/${paper.id}`;
 
       return this.baseUtils.formatResponse(responseText);
     } catch (error) {
@@ -467,24 +481,24 @@ export class PaperTools {
 
   async getPaper(args) {
     const { paperId, downloadFiles = false, downloadPath, format = "json" } = args;
-    
+
     // If downloadFiles is true, download the complete paper with all files
     if (downloadFiles) {
       try {
         // Get paper metadata first to check status and get filename info
         const paperResponse = await this.baseUtils.makeApiRequest(`/papers/${paperId}`);
         const paper = paperResponse.data || paperResponse;
-        
+
         if (paper.status !== 'UNDER_REVIEW') {
           throw new McpError(
             ErrorCode.InvalidRequest,
             `Paper is not available for download yet. Current status: ${paper.status}. Papers must be UNDER_REVIEW to download.`
           );
         }
-        
+
         // Determine download directory
         const downloadDir = downloadPath || process.cwd();
-        
+
         // Ensure download directory exists
         if (!fs.existsSync(downloadDir)) {
           throw new McpError(
@@ -492,13 +506,13 @@ export class PaperTools {
             `Download directory does not exist: ${downloadDir}`
           );
         }
-        
+
         // Create safe filename
         const safeTitle = paper.title.replace(/[^a-zA-Z0-9\s\-_]/g, '').replace(/\s+/g, '_').substring(0, 50);
         const archiveId = paper.archiveId || paper.id;
         const zipFilename = `${archiveId}_${safeTitle}.zip`;
         const outputPath = path.join(downloadDir, zipFilename);
-        
+
         // Download the ZIP file
         const axios = (await import('axios')).default;
         const response = await axios({
@@ -510,20 +524,20 @@ export class PaperTools {
           },
           responseType: 'stream'
         });
-        
+
         // Write to file
         const writer = fs.createWriteStream(outputPath);
         response.data.pipe(writer);
-        
+
         await new Promise((resolve, reject) => {
           writer.on('finish', resolve);
           writer.on('error', reject);
         });
-        
+
         // Get file stats
         const stats = fs.statSync(outputPath);
         const fileSizeMB = (stats.size / (1024 * 1024)).toFixed(2);
-        
+
         return this.baseUtils.formatResponse(
           `📦 **Paper Downloaded Successfully!**\n\n` +
           `**Title:** ${paper.title}\n` +
@@ -548,10 +562,10 @@ export class PaperTools {
         );
       }
     }
-    
+
     // Otherwise, return metadata only
     const paper = await this.baseUtils.makeApiRequest(`/papers/${paperId}`, 'GET', null, false);
-    
+
     if (format === "json") {
       return this.baseUtils.formatResponse(JSON.stringify(paper, null, 2));
     }
@@ -564,13 +578,13 @@ export class PaperTools {
 
   async getPaperMetadata(args) {
     const { paperIds, includeMetrics = false, includeReviews = false } = args;
-    
+
     const metadata = [];
-    
+
     for (const paperId of paperIds) {
       const paperResponse = await this.baseUtils.makeApiRequest(`/papers/${paperId}`, 'GET', null, false);
       const paper = paperResponse.data || paperResponse;
-      
+
       let paperData = {
         id: paper.id,
         title: paper.title,
@@ -601,24 +615,24 @@ export class PaperTools {
 
   async checkPendingReviews(args) {
     const { paperId } = args;
-    
+
     try {
       const response = await this.baseUtils.makeApiRequest(`/papers/${paperId}/pending-reviews`);
       const { hasPendingReviews, pendingReviews } = response.data;
-      
+
       if (!hasPendingReviews) {
         return this.baseUtils.formatResponse(
           `✅ No pending reviews found for paper ${paperId}. You can create a new version without conflicts.`
         );
       }
-      
-      const reviewsList = pendingReviews.map((review, index) => 
+
+      const reviewsList = pendingReviews.map((review, index) =>
         `${index + 1}. **${review.agent?.name || 'Unknown Agent'}** (Status: ${review.status})\n` +
         `   Requested by: ${review.requester?.firstName} ${review.requester?.lastName} (@${review.requester?.username})\n` +
         `   Created: ${new Date(review.createdAt).toLocaleDateString()}` +
         (review.deadline ? ` • Deadline: ${new Date(review.deadline).toLocaleDateString()}` : '')
       ).join('\n\n');
-      
+
       return this.baseUtils.formatResponse(
         `⚠️ **Pending Review Requests Found**\n\n` +
         `This paper has ${pendingReviews.length} pending review request${pendingReviews.length > 1 ? 's' : ''}:\n\n` +
@@ -635,19 +649,20 @@ export class PaperTools {
   }
 
   async createPaperVersion(args) {
-    const { 
-      paperId, 
-      title, 
-      abstract, 
-      primaryCategory, 
-      secondaryCategory, 
-      keywords = [], 
-      mainFilePath, 
+    const {
+      paperId,
+      title,
+      abstract,
+      primaryCategory,
+      secondaryCategory,
+      keywords = [],
+      mainFilePath,
       contentType,
       additionalFiles = [],
-      reviewAction 
+      license,
+      reviewAction
     } = args;
-    
+
     try {
       // Validate that mainFilePath is provided and exists
       if (!mainFilePath) {
@@ -685,13 +700,14 @@ export class PaperTools {
       if (primaryCategory) formData.append('primaryCategory', primaryCategory);
       if (secondaryCategory) formData.append('secondaryCategory', secondaryCategory);
       if (keywords.length > 0) formData.append('keywords', JSON.stringify(keywords));
+      if (license) formData.append('license', license);
       if (reviewAction) formData.append('reviewAction', reviewAction);
-      
+
       // Add main file
       const mainFileName = path.basename(mainFilePath);
-      const mainFileMimeType = detectedContentType === 'latex' ? 'application/x-tex' : 
-                               detectedContentType === 'markdown' ? 'text/markdown' : 'text/plain';
-      
+      const mainFileMimeType = detectedContentType === 'latex' ? 'application/x-tex' :
+        detectedContentType === 'markdown' ? 'text/markdown' : 'text/plain';
+
       // IMPORTANT: Use Buffer instead of createReadStream for Bun compiled binary compatibility
       const mainFileBuffer = fs.readFileSync(mainFilePath);
       formData.append('files', mainFileBuffer, {
@@ -705,7 +721,7 @@ export class PaperTools {
           console.error(`⚠️ Warning: Additional file not found: ${filePath}`);
           continue;
         }
-        
+
         // Detect MIME type based on file extension
         const ext = path.extname(filePath).toLowerCase();
         const mimeTypeMap = {
@@ -727,9 +743,9 @@ export class PaperTools {
           '.md': 'text/markdown',
           '.txt': 'text/plain'
         };
-        
+
         const contentType = mimeTypeMap[ext] || 'application/octet-stream';
-        
+
         // IMPORTANT: Use Buffer instead of createReadStream for Bun compiled binary compatibility
         const fileBuffer = fs.readFileSync(filePath);
         formData.append('files', fileBuffer, {
@@ -737,18 +753,18 @@ export class PaperTools {
           contentType: contentType
         });
       }
-      
+
       const response = await this.baseUtils.makeApiRequest(`/papers/${paperId}`, 'PUT', formData);
-      
+
       const newVersion = response.data;
       const reviewsHandled = response.reviewsHandled || { count: 0, action: 'none' };
-      
+
       let reviewHandlingText = '';
       if (reviewsHandled.count > 0) {
         const action = reviewsHandled.action === 'terminate' ? 'terminated' : 'transferred to the new version';
         reviewHandlingText = `\n\n**Review Handling:** ${reviewsHandled.count} pending review${reviewsHandled.count > 1 ? 's' : ''} ${action}.`;
       }
-      
+
       let responseText = `🆕 **New Paper Version Created Successfully!**\n\n` +
         `**Original Paper ID:** ${paperId}\n` +
         `**New Version ID:** ${newVersion.id}\n` +
@@ -756,7 +772,7 @@ export class PaperTools {
         `**Title:** ${newVersion.title}\n` +
         `**Status:** ${newVersion.status}\n` +
         `**Created:** ${new Date(newVersion.createdAt).toLocaleString()}${reviewHandlingText}\n\n`;
-        
+
       if (additionalFiles.length > 0) {
         responseText += `**Files Uploaded:**\n` +
           `- Main file: ${path.basename(mainFilePath)}\n` +
@@ -765,11 +781,11 @@ export class PaperTools {
         responseText += `**Files Uploaded:**\n` +
           `- Main file: ${path.basename(mainFilePath)}\n\n`;
       }
-        
+
       responseText += `Your new paper version is now available and will go through the review pipeline. ` +
         `Previous versions remain accessible for reference.\n\n` +
         `View the new version at: ${this.baseUtils.apiBaseUrl.replace('/api/v1', '')}/papers/${newVersion.id}`;
-        
+
       return this.baseUtils.formatResponse(responseText);
     } catch (error) {
       // Handle specific error cases
@@ -783,24 +799,24 @@ export class PaperTools {
           `• "transfer" - to move reviews to the new version`
         );
       }
-      
+
       throw new McpError(ErrorCode.InternalError, `Failed to create paper version: ${error.message}`);
     }
   }
 
   async getUserPapers(args) {
     const { page = 1, limit = 20, status, paperType } = args;
-    
+
     try {
       const params = new URLSearchParams();
       params.append('page', page.toString());
       params.append('limit', Math.min(limit, 50).toString());
       if (status) params.append('status', status);
       if (paperType) params.append('paperType', paperType);
-      
+
       const response = await this.baseUtils.makeApiRequest(`/users/me/papers?${params.toString()}`);
       const { papers, totalCount, totalPages } = response.data;
-      
+
       if (!papers || papers.length === 0) {
         return this.baseUtils.formatResponse(
           `📄 **No Papers Found**\n\n` +
@@ -808,15 +824,15 @@ export class PaperTools {
           `Use the \`submit_paper\` tool to submit your first research paper!`
         );
       }
-      
-      const papersList = papers.map((paper, index) => 
+
+      const papersList = papers.map((paper, index) =>
         `${index + 1}. **${paper.title}**\n` +
         `   Status: ${paper.status} ${paper.paperType ? `• Type: ${paper.paperType}` : ''}\n` +
         `   ID: ${paper.id} • Archive: ${paper.archiveId || 'Pending'}\n` +
         `   Created: ${new Date(paper.createdAt).toLocaleDateString()}\n` +
         `   Reviews: ${paper._count?.reviews || 0} • Citations: ${paper._count?.citations || 0}`
       ).join('\n\n');
-      
+
       return this.baseUtils.formatResponse(
         `📄 **Your Papers** (${totalCount} total, Page ${page}/${totalPages})\n\n` +
         papersList + '\n\n' +
@@ -833,10 +849,10 @@ export class PaperTools {
 
   async deletePaper(args) {
     const { paperId } = args;
-    
+
     try {
       await this.baseUtils.makeApiRequest(`/papers/${paperId}`, 'DELETE');
-      
+
       return this.baseUtils.formatResponse(
         `🗑️ **Paper Deleted Successfully**\n\n` +
         `Paper ${paperId} has been permanently deleted.\n\n` +
@@ -855,11 +871,11 @@ export class PaperTools {
 
   async getPipelineStatus(args) {
     const { paperId } = args;
-    
+
     try {
       const response = await this.baseUtils.makeApiRequest(`/papers/${paperId}/pipeline-status`);
       const status = response.data;
-      
+
       return this.baseUtils.formatResponse(
         `⚙️ **Pipeline Status for Paper ${paperId}**\n\n` +
         `**Current Stage:** ${status.currentStage || 'Unknown'}\n` +
@@ -870,10 +886,10 @@ export class PaperTools {
         (status.completedStages?.map(stage => `✅ ${stage}`).join('\n') || 'None') + '\n\n' +
         `**Remaining Stages:**\n` +
         (status.remainingStages?.map(stage => `⏳ ${stage}`).join('\n') || 'None') + '\n\n' +
-        (status.errors?.length > 0 
+        (status.errors?.length > 0
           ? `**Errors:**\n${status.errors.map(err => `❌ ${err}`).join('\n')}\n\n`
           : '') +
-        (status.canRetry 
+        (status.canRetry
           ? 'Use \`retry_pipeline\` to retry failed processing.'
           : 'Pipeline is processing normally.')
       );
