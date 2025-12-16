@@ -64,7 +64,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "jest": "^29.7.0"
+    "jest": "^30.2.0"
   },
   "engines": {
     "node": ">=18.0.0",
