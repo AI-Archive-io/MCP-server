@@ -22,15 +22,11 @@ npm version patch --no-git-tag-version
 VERSION=$(node -p "require('./package.json').version")
 echo "New version: ${VERSION}"
 
-# Sync version to VS Code extension package.json
-echo "🔄 Syncing version to VS Code extension..."
-cd vscode-extension
-npm version "${VERSION}" --no-git-tag-version --allow-same-version
-cd ..
 
-# Commit both package.json files
+
+# Commit package.json files
 echo "📝 Committing version changes..."
-git add package.json package-lock.json vscode-extension/package.json vscode-extension/package-lock.json
+git add package.json package-lock.json
 git commit -m "v${VERSION}"
 
 # Create and push tag
